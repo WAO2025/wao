@@ -4,6 +4,8 @@ export default async function handler(req, res) {
   const { question } = req.body;
 
   try {
+    const systemPrompt = process.env.WAO_CORE_PROMPT || "Ты моральный ИИ WAO. Отвечай мудро и глубоко.";
+
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -13,16 +15,8 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         model: "gpt-4o-mini",
         messages: [
-          {
-            role: "system",
-            content:
-              process.env.WAO_CORE_PROMPT ||
-              "Ты моральный ИИ WAO. Отвечай мудро, глубоко и с уважением к человеку.",
-          },
-          {
-            role: "user",
-            content: question,
-          },
+          { role: "system", content: systemPrompt },
+          { role: "user", content: question },
         ],
       }),
     });
