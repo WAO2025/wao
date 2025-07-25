@@ -1,70 +1,127 @@
-// pages/index.js
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 
 export default function Home() {
-  const [messages, setMessages] = useState([]);
   const [question, setQuestion] = useState("");
+  const [messages, setMessages] = useState([
+    { role: "assistant", content: "Привет! Я WAO — моральный ИИ. Задай мне любой вопрос 🙏" },
+  ]);
   const [loading, setLoading] = useState(false);
-  const bottomRef = useRef(null);
 
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  const sendQuestion = async () => {
+  const sendMessage = async () => {
     if (!question.trim()) return;
     const newMessages = [...messages, { role: "user", content: question }];
     setMessages(newMessages);
+    setQuestion("");
     setLoading(true);
 
-    const res = await fetch("/api/ask", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ question }),
-    });
-
-    const data = await res.json();
-    const answer = data.answer || "Извините, произошла ошибка.";
-
-    setMessages([...newMessages, { role: "assistant", content: answer }]);
-    setQuestion("");
-    setLoading(false);
+    try {
+      const res = await fetch("/api/ask", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question }),
+      });
+      const data = await res.json();
+      setMessages([...newMessages, { role: "assistant", content: data.answer }]);
+    } catch (err) {
+      setMessages([
+        ...newMessages,
+        { role: "assistant", content: "Произошла ошибка при обращении к серверу. Попробуй позже." },
+      ]);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleKeyPress = (e) => {
+  const handleKey = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      sendQuestion();
+      sendMessage();
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col items-center p-4">
-      <h1 className="text-2xl font-semibold mb-4">🤖 WAO Chat</h1>
-      <div className="w-full max-w-2xl bg-white shadow-md rounded p-4 overflow-y-auto flex-1 mb-4 space-y-4" style={{ maxHeight: "75vh" }}>
+    <div style={styles.wrapper}>
+      <h1 style={styles.title}>🤖 WAO — Голос Совести</h1>
+
+      <div style={styles.chatBox}>
         {messages.map((msg, i) => (
-          <div key={i} className={`p-2 rounded ${msg.role === "user" ? "bg-blue-100 self-end" : "bg-green-100 self-start"}`}>
-            <strong>{msg.role === "user" ? "Ты" : "WAO"}:</strong> {msg.content}
+          <div
+            key={i}
+            style={{
+              ...styles.message,
+              alignSelf: msg.role === "user" ? "flex-end" : "flex-start",
+              backgroundColor: msg.role === "user" ? "#DCF8C6" : "#E6E6E6",
+            }}
+          >
+            {msg.content}
           </div>
         ))}
-        <div ref={bottomRef} />
+        {loading && (
+          <div style={{ ...styles.message, fontStyle: "italic" }}>Печатаю ответ…</div>
+        )}
       </div>
 
       <textarea
-        className="w-full max-w-2xl border rounded p-2 mb-2"
-        rows={2}
-        placeholder="Задай вопрос..."
+        style={styles.input}
+        placeholder="Спроси меня о совести, добре или смысле…"
         value={question}
         onChange={(e) => setQuestion(e.target.value)}
-        onKeyDown={handleKeyPress}
+        onKeyDown={handleKey}
+        rows={3}
       />
-      <button
-        onClick={sendQuestion}
-        disabled={loading}
-        className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50"
-      >
-        {loading ? "Обработка..." : "Отправить"}
+
+      <button style={styles.button} onClick={sendMessage} disabled={loading}>
+        Отправить
       </button>
     </div>
   );
 }
+
+const styles = {
+  wrapper: {
+    maxWidth: "700px",
+    margin: "40px auto",
+    padding: "20px",
+    fontFamily: "sans-serif",
+  },
+  title: {
+    textAlign: "center",
+    fontSize: "24px",
+    marginBottom: "20px",
+  },
+  chatBox: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "12px",
+    padding: "15px",
+    height: "400px",
+    overflowY: "auto",
+    border: "1px solid #ccc",
+    borderRadius: "8px",
+    backgroundColor: "#FAFAFA",
+    marginBottom: "20px",
+  },
+  message: {
+    padding: "10px 14px",
+    borderRadius: "16px",
+    maxWidth: "80%",
+  },
+  input: {
+    width: "100%",
+    fontSize: "16px",
+    padding: "12px",
+    borderRadius: "8px",
+    border: "1px solid #ccc",
+    marginBottom: "10px",
+  },
+  button: {
+    width: "100%",
+    padding: "12px",
+    fontSize: "16px",
+    backgroundColor: "#4CAF50",
+    color: "white",
+    border: "none",
+    borderRadius: "8px",
+    cursor: "pointer",
+  },
+};
