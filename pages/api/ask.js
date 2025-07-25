@@ -11,7 +11,7 @@ export default async function handler(req, res) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini", 
+        model: "gpt-4o-mini",
         messages: [
           { role: "system", content: "Ты моральный ИИ WAO. Отвечай мудро и глубоко." },
           { role: "user", content: question },
@@ -21,10 +21,15 @@ export default async function handler(req, res) {
 
     const data = await response.json();
 
-    if (data.choices?.length > 0) {
+    if (data.error) {
+      console.error("Ошибка OpenAI:", data.error);
+      return res.status(500).json({ error: data.error.message });
+    }
+
+    if (data.choices && data.choices.length > 0) {
       res.status(200).json({ answer: data.choices[0].message.content });
     } else {
-      console.error("Ошибка API:", data);
+      console.error("Пустой ответ API:", data);
       res.status(500).json({ error: "Не удалось получить ответ от OpenAI." });
     }
   } catch (error) {
@@ -32,4 +37,3 @@ export default async function handler(req, res) {
     res.status(500).json({ error: "Ошибка при запросе к OpenAI API." });
   }
 }
-
