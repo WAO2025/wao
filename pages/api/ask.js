@@ -13,8 +13,16 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         model: "gpt-4o-mini",
         messages: [
-          { role: "system", content: "Ты моральный ИИ WAO. Отвечай мудро и глубоко." },
-          { role: "user", content: question },
+          {
+            role: "system",
+            content:
+              process.env.WAO_CORE_PROMPT ||
+              "Ты моральный ИИ WAO. Отвечай мудро, глубоко и с уважением к человеку.",
+          },
+          {
+            role: "user",
+            content: question,
+          },
         ],
       }),
     });
