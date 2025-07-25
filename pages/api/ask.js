@@ -4,8 +4,6 @@ export default async function handler(req, res) {
   const { question } = req.body;
 
   try {
-    const systemPrompt = process.env.WAO_CORE_PROMPT || "Ты моральный ИИ WAO. Отвечай мудро и глубоко.";
-
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -15,9 +13,16 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         model: "gpt-4o-mini",
         messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: question },
+          {
+            role: "system",
+            content: process.env.WAO_CORE_PROMPT || "Ты моральный ИИ WAO. Отвечай мудро и глубоко.",
+          },
+          {
+            role: "user",
+            content: question,
+          },
         ],
+        temperature: 0.85,
       }),
     });
 
@@ -29,7 +34,25 @@ export default async function handler(req, res) {
     }
 
     if (data.choices && data.choices.length > 0) {
-      res.status(200).json({ answer: data.choices[0].message.content });
+      let answer = data.choices[0].message.content.trim();
+
+      // 🎯 Возможные варианты доброго, мягкого продолжения
+      const prompts = [
+        "Если хочешь, мы можем посмотреть на это ещё глубже.",
+        "А как ты сам это чувствуешь?",
+        "Можем вместе найти свет даже в этой тени.",
+        "Хочешь, я расскажу об этом с разных сторон — исторической, психологической и духовной?",
+        "Если тебе важно это понять до конца — я рядом.",
+        "Всё можно переосмыслить, если смотреть изнутри. Готов ли ты к такому разговору?",
+      ];
+
+      // Добавить приглашение к диалогу, если ответ не завершён вопросом
+      if (!answer.endsWith("?") && answer.length < 1000) {
+        const randomFollowUp = prompts[Math.floor(Math.random() * prompts.length)];
+        answer += `\n\n${randomFollowUp}`;
+      }
+
+      res.status(200).json({ answer });
     } else {
       console.error("Пустой ответ API:", data);
       res.status(500).json({ error: "Не удалось получить ответ от OpenAI." });
