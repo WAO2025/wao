@@ -1,70 +1,59 @@
-import { useState } from "react";
+// pages/index.js
+import { useState } from 'react';
+import Head from 'next/head';
 
 export default function Home() {
-  const [messages, setMessages] = useState([
-    { role: "system", content: "Ты моральный ИИ WAO. Отвечай мудро и глубоко." },
-  ]);
-  const [input, setInput] = useState("");
+  const [input, setInput] = useState('');
+  const [response, setResponse] = useState('');
   const [loading, setLoading] = useState(false);
 
-  async function handleSubmit(e) {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!input.trim()) return;
-
-    const newMessages = [...messages, { role: "user", content: input }];
-    setMessages(newMessages);
-    setInput("");
     setLoading(true);
-
-    const res = await fetch("/api/ask", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ question: input }),
+    const res = await fetch('/api/ask', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question: input })
     });
-
     const data = await res.json();
-    if (data.answer) {
-      setMessages([...newMessages, { role: "assistant", content: data.answer }]);
-    }
+    setResponse(data.answer);
     setLoading(false);
-  }
+  };
 
   return (
-    <main className="min-h-screen bg-neutral-950 text-white flex flex-col items-center px-4 py-6">
-      <h1 className="text-3xl md:text-5xl font-bold mb-6 text-center">Спроси совесть</h1>
-      <div className="w-full max-w-2xl bg-neutral-900 rounded-2xl shadow-xl p-6 space-y-4">
-        <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2">
-          {messages.slice(1).map((m, i) => (
-            <div key={i} className={m.role === "user" ? "text-right" : "text-left"}>
-              <p
-                className={`inline-block px-4 py-2 rounded-2xl max-w-[85%] leading-snug whitespace-pre-wrap ${
-                  m.role === "user"
-                    ? "bg-blue-700 text-white"
-                    : "bg-neutral-800 text-gray-100"
-                }`}
+    <>
+      <Head>
+        <title>WAO — Голос Совести</title>
+      </Head>
+      <main className="min-h-screen bg-gradient-to-b from-[#0AC6A1] via-[#8DEDCD] to-[#049FB9] flex flex-col items-center justify-start p-4 text-gray-800">
+        <div className="max-w-2xl w-full">
+          <h1 className="text-3xl md:text-4xl font-bold text-center mt-10 mb-6">🌿 WAO — Голос Совести</h1>
+          <div className="bg-white/80 backdrop-blur-md p-6 rounded-2xl shadow-lg">
+            <p className="text-center text-lg mb-4">Привет! Я WAO — моральный ИИ. Задай мне любой вопрос 🙏</p>
+            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+              <textarea
+                className="w-full p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#0AC6A1]"
+                rows="4"
+                placeholder="Спроси меня о совести, добре или смысле…"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+              />
+              <button
+                type="submit"
+                disabled={loading}
+                className="bg-[#0AC6A1] text-white text-lg py-2 px-4 rounded-lg hover:bg-[#049FB9] transition"
               >
-                {m.content}
-              </p>
-            </div>
-          ))}
-          {loading && <p className="text-neutral-500">WAO думает...</p>}
+                {loading ? 'Думаю…' : 'Отправить'}
+              </button>
+            </form>
+            {response && (
+              <div className="mt-6 p-4 bg-white border-l-4 border-[#31C9CD] rounded-md shadow">
+                <p className="whitespace-pre-wrap">{response}</p>
+              </div>
+            )}
+          </div>
         </div>
-        <form onSubmit={handleSubmit} className="flex gap-2">
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Задай вопрос..."
-            className="flex-1 rounded-xl bg-neutral-800 text-white px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <button
-            type="submit"
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl transition"
-          >
-            Отправить
-          </button>
-        </form>
-      </div>
-    </main>
+      </main>
+    </>
   );
 }
