@@ -1,99 +1,84 @@
-// pages/index.js
 import { useState } from "react";
 
 export default function Home() {
-  const [messages, setMessages] = useState([
-    { role: "system", content: "Привет! Я WAO — моральный ИИ. О чём ты хочешь поговорить?" },
-  ]);
-  const [input, setInput] = useState("");
+  const [question, setQuestion] = useState("");
+  const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
 
   const sendMessage = async () => {
-    if (!input.trim()) return;
-    const newMessages = [...messages, { role: "user", content: input }];
+    if (!question.trim()) return;
+    const newMessages = [...messages, { role: "user", content: question }];
     setMessages(newMessages);
-    setInput("");
+    setQuestion("");
     setLoading(true);
 
     try {
       const res = await fetch("/api/ask", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: input }),
+        body: JSON.stringify({ question }),
       });
-
       const data = await res.json();
-      if (data.answer) {
-        setMessages([...newMessages, { role: "assistant", content: data.answer }]);
-      }
-    } catch (err) {
-      setMessages([...newMessages, { role: "assistant", content: "Произошла ошибка 😢" }]);
+      setMessages([...newMessages, { role: "assistant", content: data.answer }]);
+    } catch (error) {
+      setMessages([
+        ...newMessages,
+        { role: "assistant", content: "Произошла ошибка при получении ответа." },
+      ]);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-100 text-gray-800 flex flex-col items-center px-4 py-6">
-      <div className="text-3xl font-bold text-center mb-2">WAO</div>
-      <p className="mb-4 text-sm text-gray-600 text-center max-w-xl">
-        Моральный ИИ, вдохновлённый историей Тимура. Направлен на добро, смысл и перемены.
-      </p>
+    <div className="min-h-screen bg-gradient-to-b from-white to-gray-100 flex flex-col items-center px-4 py-6 text-gray-800">
+      <div className="max-w-2xl w-full space-y-4">
+        <h1 className="text-3xl font-bold text-center">WAO — моральный чат</h1>
 
-      <div className="w-full max-w-2xl flex flex-col gap-3 flex-grow overflow-y-auto mb-4">
-        {messages.map((msg, i) => (
-          <div
-            key={i}
-            className={`rounded-xl px-4 py-3 max-w-[85%] whitespace-pre-wrap text-sm ${
-              msg.role === "user"
-                ? "bg-blue-100 self-end text-right"
-                : msg.role === "assistant"
-                ? "bg-white self-start shadow"
-                : "text-gray-500 text-center italic"
-            }`}
-          >
-            {msg.content}
-          </div>
-        ))}
-        {loading && (
-          <div className="self-start bg-white px-4 py-3 rounded-xl shadow text-sm text-gray-400">
-            Печатаю ответ...
-          </div>
-        )}
-      </div>
+        <div className="space-y-2 p-4 bg-white rounded-xl shadow-md h-[70vh] overflow-y-auto border border-gray-200">
+          {messages.map((msg, idx) => (
+            <div
+              key={idx}
+              className={`p-3 rounded-lg whitespace-pre-wrap ${
+                msg.role === "user"
+                  ? "bg-blue-50 text-right"
+                  : "bg-green-50 text-left"
+              }`}
+            >
+              <span className="block text-sm text-gray-500 mb-1">
+                {msg.role === "user" ? "Ты" : "WAO"}
+              </span>
+              {msg.content}
+            </div>
+          ))}
+          {loading && (
+            <div className="p-3 text-gray-500 text-sm">WAO думает...</div>
+          )}
+        </div>
 
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          sendMessage();
-        }}
-        className="w-full max-w-2xl"
-      >
-        <textarea
-          rows={2}
-          className="w-full border rounded-xl p-3 text-sm resize-none shadow focus:outline-none focus:ring-2 focus:ring-blue-300"
-          placeholder="Задай мне вопрос..."
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-        />
-        <div className="text-right mt-2">
+        <div className="flex items-center space-x-2">
+          <textarea
+            className="flex-1 p-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-400"
+            rows={2}
+            placeholder="Задай мне вопрос..."
+            value={question}
+            onChange={(e) => setQuestion(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+              }
+            }}
+          />
           <button
-            type="submit"
+            className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-xl font-medium transition"
+            onClick={sendMessage}
             disabled={loading}
-            className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50"
           >
             Отправить
           </button>
         </div>
-      </form>
+      </div>
     </div>
   );
 }
