@@ -1,127 +1,89 @@
-import { useState } from "react";
+// pages/index.tsx
+'use client'
 
-export default function Home() {
-  const [question, setQuestion] = useState("");
-  const [messages, setMessages] = useState([
-    { role: "assistant", content: "Привет! Я WAO — моральный ИИ. Задай мне любой вопрос 🙏" },
-  ]);
+import { useState, useEffect, useRef } from 'react';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent } from '@/components/ui/card';
+import { Loader2 } from 'lucide-react';
+
+interface Message {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+export default function Chat() {
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const chatEndRef = useRef<HTMLDivElement | null>(null);
+
+  const scrollToBottom = () => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   const sendMessage = async () => {
-    if (!question.trim()) return;
-    const newMessages = [...messages, { role: "user", content: question }];
-    setMessages(newMessages);
-    setQuestion("");
+    if (!input.trim()) return;
+    const userMessage = { role: 'user' as const, content: input };
+    setMessages((prev) => [...prev, userMessage]);
+    setInput('');
     setLoading(true);
 
     try {
-      const res = await fetch("/api/ask", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question }),
+      const res = await fetch('/api/ask', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question: input }),
       });
       const data = await res.json();
-      setMessages([...newMessages, { role: "assistant", content: data.answer }]);
+      setMessages((prev) => [...prev, { role: 'assistant', content: data.answer }]);
     } catch (err) {
-      setMessages([
-        ...newMessages,
-        { role: "assistant", content: "Произошла ошибка при обращении к серверу. Попробуй позже." },
-      ]);
+      setMessages((prev) => [...prev, { role: 'assistant', content: 'Произошла ошибка. Попробуй ещё раз.' }]);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleKey = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       sendMessage();
     }
   };
 
   return (
-    <div style={styles.wrapper}>
-      <h1 style={styles.title}>🤖 WAO — Голос Совести</h1>
-
-      <div style={styles.chatBox}>
-        {messages.map((msg, i) => (
-          <div
-            key={i}
-            style={{
-              ...styles.message,
-              alignSelf: msg.role === "user" ? "flex-end" : "flex-start",
-              backgroundColor: msg.role === "user" ? "#DCF8C6" : "#E6E6E6",
-            }}
-          >
-            {msg.content}
-          </div>
+    <div className="flex flex-col h-screen max-w-3xl mx-auto p-4">
+      <div className="flex-1 overflow-y-auto space-y-4">
+        {messages.map((msg, idx) => (
+          <Card key={idx} className={msg.role === 'user' ? 'bg-white/5' : 'bg-purple-100/5'}>
+            <CardContent className="p-4">
+              <p className="text-sm whitespace-pre-line">
+                <span className="font-semibold text-purple-600">{msg.role === 'user' ? 'Ты' : 'WAO'}: </span>
+                {msg.content}
+              </p>
+            </CardContent>
+          </Card>
         ))}
-        {loading && (
-          <div style={{ ...styles.message, fontStyle: "italic" }}>Печатаю ответ…</div>
-        )}
+        <div ref={chatEndRef} />
       </div>
 
-      <textarea
-        style={styles.input}
-        placeholder="Спроси меня о совести, добре или смысле…"
-        value={question}
-        onChange={(e) => setQuestion(e.target.value)}
-        onKeyDown={handleKey}
-        rows={3}
-      />
-
-      <button style={styles.button} onClick={sendMessage} disabled={loading}>
-        Отправить
-      </button>
+      <div className="mt-4">
+        <Textarea
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Задай вопрос WAO..."
+          className="mb-2 resize-none"
+        />
+        <Button onClick={sendMessage} disabled={loading} className="w-full">
+          {loading ? <Loader2 className="animate-spin w-4 h-4 mr-2" /> : null}
+          Отправить
+        </Button>
+      </div>
     </div>
   );
 }
-
-const styles = {
-  wrapper: {
-    maxWidth: "700px",
-    margin: "40px auto",
-    padding: "20px",
-    fontFamily: "sans-serif",
-  },
-  title: {
-    textAlign: "center",
-    fontSize: "24px",
-    marginBottom: "20px",
-  },
-  chatBox: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "12px",
-    padding: "15px",
-    height: "400px",
-    overflowY: "auto",
-    border: "1px solid #ccc",
-    borderRadius: "8px",
-    backgroundColor: "#FAFAFA",
-    marginBottom: "20px",
-  },
-  message: {
-    padding: "10px 14px",
-    borderRadius: "16px",
-    maxWidth: "80%",
-  },
-  input: {
-    width: "100%",
-    fontSize: "16px",
-    padding: "12px",
-    borderRadius: "8px",
-    border: "1px solid #ccc",
-    marginBottom: "10px",
-  },
-  button: {
-    width: "100%",
-    padding: "12px",
-    fontSize: "16px",
-    backgroundColor: "#4CAF50",
-    color: "white",
-    border: "none",
-    borderRadius: "8px",
-    cursor: "pointer",
-  },
-};
