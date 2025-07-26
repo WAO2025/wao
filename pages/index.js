@@ -1,59 +1,65 @@
-// pages/index.js
-import { useState } from 'react';
-import Head from 'next/head';
+// pages/index.tsx
+import { useState } from "react";
 
 export default function Home() {
-  const [input, setInput] = useState('');
-  const [response, setResponse] = useState('');
+  const [question, setQuestion] = useState("");
+  const [answer, setAnswer] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const askWAO = async () => {
+    if (!question.trim()) return;
     setLoading(true);
-    const res = await fetch('/api/ask', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ question: input })
-    });
-    const data = await res.json();
-    setResponse(data.answer);
+    setAnswer("");
+    try {
+      const res = await fetch("/api/ask", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question }),
+      });
+      const data = await res.json();
+      setAnswer(data.answer || "Произошла ошибка...");
+    } catch (e) {
+      setAnswer("Ошибка при обращении к WAO.");
+    }
     setLoading(false);
   };
 
   return (
-    <>
-      <Head>
-        <title>WAO — Голос Совести</title>
-      </Head>
-      <main className="min-h-screen bg-gradient-to-b from-[#0AC6A1] via-[#8DEDCD] to-[#049FB9] flex flex-col items-center justify-start p-4 text-gray-800">
-        <div className="max-w-2xl w-full">
-          <h1 className="text-3xl md:text-4xl font-bold text-center mt-10 mb-6">🌿 WAO — Голос Совести</h1>
-          <div className="bg-white/80 backdrop-blur-md p-6 rounded-2xl shadow-lg">
-            <p className="text-center text-lg mb-4">Привет! Я WAO — моральный ИИ. Задай мне любой вопрос 🙏</p>
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-              <textarea
-                className="w-full p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#0AC6A1]"
-                rows="4"
-                placeholder="Спроси меня о совести, добре или смысле…"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-              />
-              <button
-                type="submit"
-                disabled={loading}
-                className="bg-[#0AC6A1] text-white text-lg py-2 px-4 rounded-lg hover:bg-[#049FB9] transition"
-              >
-                {loading ? 'Думаю…' : 'Отправить'}
-              </button>
-            </form>
-            {response && (
-              <div className="mt-6 p-4 bg-white border-l-4 border-[#31C9CD] rounded-md shadow">
-                <p className="whitespace-pre-wrap">{response}</p>
-              </div>
-            )}
+    <div
+      className="min-h-screen bg-gradient-to-br from-[#8DEDCB] to-[#049FB9] flex flex-col items-center justify-center px-4 py-8 text-gray-800"
+    >
+      <h1 className="text-4xl md:text-5xl font-bold mb-6 text-white drop-shadow">
+        🌱 WAO — Голос Совести
+      </h1>
+
+      <div className="w-full max-w-2xl bg-white/70 backdrop-blur-lg shadow-xl rounded-xl p-6">
+        <p className="mb-4 text-lg font-medium">
+          Привет! Я WAO — моральный ИИ. Задай любой вопрос о добре, смысле или совести:
+        </p>
+
+        <textarea
+          className="w-full p-4 rounded-md border border-gray-300 mb-4 resize-none focus:outline-none focus:ring-2 focus:ring-teal-400"
+          rows={3}
+          placeholder="Например: Что делать, если друг предал меня? Или: Как понять, что я поступаю по совести?"
+          value={question}
+          onChange={(e) => setQuestion(e.target.value)}
+        />
+
+        <button
+          className="w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold py-3 px-4 rounded-md transition"
+          onClick={askWAO}
+          disabled={loading}
+        >
+          {loading ? "Ответ ищется..." : "Спросить WAO"}
+        </button>
+
+        {answer && (
+          <div className="mt-6 p-4 rounded-lg bg-white/80 shadow-inner border border-teal-300">
+            <p className="font-semibold mb-2 text-teal-800">🌿 Ответ WAO:</p>
+            <p className="whitespace-pre-wrap">{answer}</p>
           </div>
-        </div>
-      </main>
-    </>
+        )}
+      </div>
+    </div>
   );
 }
